@@ -83,6 +83,11 @@ bool AP_DeathLinkPending();
 void AP_DeathLinkClear();
 void AP_DeathLinkSend();
 
+/* Name Mapping Functions */
+
+std::string AP_GetLocationName(int64_t);
+std::string AP_GetItemName(int64_t);
+
 /* Message Management Types */
 
 enum struct AP_MessageType {
@@ -128,6 +133,10 @@ enum struct AP_ConnectionStatus {
     Disconnected, Connected, Authenticated, ConnectionRefused
 };
 
+enum struct AP_DataPackageSyncStatus {
+    NotChecked, SyncPending, Synced
+};
+
 #define AP_PERMISSION_DISABLED 0b000
 #define AP_PERMISSION_ENABLED 0b001
 #define AP_PERMISSION_GOAL 0b010
@@ -150,6 +159,7 @@ struct AP_RoomInfo {
 
 int AP_GetRoomInfo(AP_RoomInfo*);
 AP_ConnectionStatus AP_GetConnectionStatus();
+AP_DataPackageSyncStatus AP_GetDataPackageStatus();
 int AP_GetUUID();
 int AP_GetPlayerID();
 
