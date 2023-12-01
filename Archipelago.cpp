@@ -105,6 +105,7 @@ void parseDataPkg(Json::Value new_datapkg);
 void parseDataPkg();
 AP_NetworkPlayer getPlayer(int team, int slot);
 void localSetServerData(Json::Value req);
+std::string messagePartsToPlainText(const std::vector<AP_MessagePart>& messageParts);
 // PRIV Func Declarations End
 
 void AP_Init(const char* ip, const char* game, const char* player_name, const char* passwd) {
@@ -790,7 +791,8 @@ bool parse_response(std::string msg, std::string &request) {
                 msg->type = AP_MessageType::ItemSend;
                 msg->item = getItemName(recv_player.game, root[i]["item"]["item"].asInt64());
                 msg->recvPlayer = recv_player.alias;
-                msg->text = msg->item + std::string(" was sent to ") + msg->recvPlayer;
+                msg->messageParts = {{msg->item, AP_ItemText}, {" was sent to "}, {msg->recvPlayer, AP_PlayerText}};
+                msg->text = messagePartsToPlainText(msg->messageParts);
                 messageQueue.push_back(msg);
             } else if(!strcmp(root[i].get("type","").asCString(),"Hint")) {
                 AP_NetworkPlayer send_player = getPlayer(0, root[i]["item"]["player"].asInt());
@@ -801,12 +803,14 @@ bool parse_response(std::string msg, std::string &request) {
                 msg->recvPlayer = getPlayer(0, root[i]["receiving"].asInt()).alias;
                 msg->location = getLocationName(send_player.game, root[i]["item"]["location"].asInt64());
                 msg->checked = root[i]["found"].asBool();
-                msg->text = std::string("Item ") + msg->item + std::string(" from ") + msg->sendPlayer + std::string(" to ") + msg->recvPlayer + std::string(" at ") + msg->location + std::string((msg->checked ? " (Checked)" : " (Unchecked)"));
+                msg->messageParts = {{"Item "}, {msg->item, AP_ItemText}, {" from "}, {msg->sendPlayer, AP_PlayerText}, {" to "}, {msg->recvPlayer, AP_PlayerText}, {" at "}, {msg->location, AP_LocationText}, {msg->checked ? " (Checked)" : " (Unchecked)"}};
+                msg->text = messagePartsToPlainText(msg->messageParts);
                 messageQueue.push_back(msg);
             } else if (!strcmp(root[i].get("type","").asCString(),"Countdown")) {
                 AP_CountdownMessage* msg = new AP_CountdownMessage;
                 msg->type = AP_MessageType::Countdown;
                 msg->timer = root[i]["countdown"].asInt();
+                msg->messageParts = {{root[i]["data"][0]["text"].asString()}};
                 msg->text = root[i]["data"][0]["text"].asString();
                 messageQueue.push_back(msg);
             } else {
@@ -849,7 +853,8 @@ bool parse_response(std::string msg, std::string &request) {
                     msg->type = AP_MessageType::ItemRecv;
                     msg->item = getItemName(ap_game, item_id);
                     msg->sendPlayer = sender.alias;
-                    msg->text = std::string("Received ") + msg->item + std::string(" from ") + msg->sendPlayer;
+                    msg->messageParts = {{"Received "}, {msg->item, AP_ItemText}, {" from "}, {msg->sendPlayer, AP_PlayerText}};
+                    msg->text = messagePartsToPlainText(msg->messageParts);
                     messageQueue.push_back(msg);
                 }
             }
@@ -988,4 +993,11 @@ void localSetServerData(Json::Value req)
     fake_msg[0]["original_value"] = old;
     std::string fake_req;
     parse_response(writer.write(fake_msg), fake_req);
+}
+
+std::string messagePartsToPlainText(const std::vector<AP_MessagePart>& messageParts) {
+    std::string out;
+    for (const auto& str : messageParts)
+        out += str.text;
+    return out;
 }
