@@ -31,7 +31,6 @@ bool ssl_success = false;
 bool data_synced = false;
 int ap_player_id;
 std::string ap_player_name;
-size_t ap_player_name_hash;
 std::string ap_ip;
 std::string ap_game;
 std::string ap_passwd;
@@ -202,6 +201,8 @@ void AP_Start() {
             sp_save_root["checked_locations"] = Json::arrayValue;
             sp_save_root["store"] = Json::objectValue;
         }
+        // Seed for savegame names etc
+        lib_room_info.seed_name = sp_ap_root["seed"].asString();
         Json::Value fake_msg;
         fake_msg[0]["cmd"] = "Connected";
         fake_msg[0]["slot"] = AP_OFFLINE_SLOT;
@@ -575,7 +576,7 @@ void AP_GetServerData(AP_GetServerDataRequest* request) {
 }
 
 std::string AP_GetPrivateServerDataPrefix() {
-    return "APCpp" + std::to_string(ap_player_name_hash) + "APCpp" + std::to_string(ap_player_id) + "APCpp";
+    return "APCpp" + lib_room_info.seed_name + "APCpp" + std::to_string(ap_player_id) + "APCpp";
 }
 
 std::string AP_GetLocationName(int64_t id) {
@@ -589,7 +590,6 @@ std::string AP_GetItemName(int64_t id) {
 // PRIV
 
 void AP_Init_Generic() {
-    ap_player_name_hash = std::hash<std::string>{}(ap_player_name);
     std::ifstream datapkg_cache_file(datapkg_cache_path);
     reader.parse(datapkg_cache_file,datapkg_cache);;
     datapkg_cache_file.close();
